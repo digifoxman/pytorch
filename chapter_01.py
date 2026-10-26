@@ -1,6 +1,7 @@
 import torch
 from torch import nn # nn contains all of PyTorch's building blocks for neural networks
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 what_were_covering = {1: "data (prepare and load)",
     2: "build model",
@@ -106,6 +107,44 @@ def simple_regression():
 
     plot_predictions(X_train, y_train, X_test, y_test, predictions=y_preds)
     
+    
+def save_model(modelToSave, modelName):
+
+    # 1. Create models directory 
+    MODEL_PATH = Path("models")
+    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+
+    # 2. Create model save path 
+    MODEL_SAVE_PATH = MODEL_PATH / modelName
+
+    # 3. Save the model state dict 
+    print(f"Saving model to: {MODEL_SAVE_PATH}")
+    torch.save(obj=modelToSave.state_dict(), # only saving the state_dict() only saves the models learned parameters
+            f=MODEL_SAVE_PATH) 
+
+
+def load_model(modelName):
+
+    # 1. Create model load path
+    MODEL_LOAD_PATH = Path("models") / modelName
+
+    # 2. Create a new instance of the model class (starts with random parameters)
+    loaded_model = LinearRegressionModel()
+
+    # 3. Overwrite the random parameters with the saved ones
+    # the class must match the saved state dict (same parameter names and shapes)
+    print(f"Loading model from: {MODEL_LOAD_PATH}")
+    loaded_model.load_state_dict(torch.load(f=MODEL_LOAD_PATH))
+
+    return loaded_model
+
+
+def load_state_dict(modelName):
+
+    # Load only the state dict (an OrderedDict of parameter names -> tensors)
+    return torch.load(f=Path("models") / modelName)
+    
+    
 def train():
     
     torch.manual_seed(42)
@@ -208,5 +247,17 @@ def workflow():
         y_preds = trained_model(X_test)
 
     plot_predictions(X_train, y_train, X_test, y_test, predictions=y_preds)
+    
+    save_model(trained_model, "regression_01.pth")
+
+    # Load the model back in and check it makes the same predictions
+    loaded_model = load_model("regression_01.pth")
+    loaded_model.eval()
+    with torch.inference_mode():
+        loaded_preds = loaded_model(X_test)
+    print(f"Loaded model predictions equal original: {torch.equal(y_preds, loaded_preds)}")
+
+    # Load just the state dict
+    print(load_state_dict("regression_01.pth"))
     
 workflow()
