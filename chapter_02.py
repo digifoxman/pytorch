@@ -69,10 +69,33 @@ def make_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     cur_model = CircleModelV0().to(device)
     print(cur_model)
+    return cur_model
+
+# Calculate accuracy (a classification metric)
+def accuracy_fn(y_true, y_pred):
+    correct = torch.eq(y_true, y_pred).sum().item() # torch.eq() calculates where two tensors are equal
+    acc = (correct / len(y_pred)) * 100 
+    return acc
     
+def untrained(cur_model: CircleModelV0, X_train, X_test, y_train, y_test ):
+    # Make predictions with the model
+    untrained_preds = cur_model(X_test.to(next(cur_model.parameters()).device))
+    print(f"Length of predictions: {len(untrained_preds)}, Shape: {untrained_preds.shape}")
+    print(f"Length of test samples: {len(y_test)}, Shape: {y_test.shape}")
+    print(f"\nFirst 10 predictions:\n{untrained_preds[:10]}")
+    print(f"\nFirst 10 test labels:\n{y_test[:10]}")
     
 def workflow():       
     X_train, X_test, y_train, y_test = data(False)
-    make_model()
+    cur_model = make_model()
+    untrained(cur_model,X_train, X_test, y_train, y_test) 
+    
+    # Create a loss function
+    # loss_fn = nn.BCELoss() # BCELoss = no sigmoid built-in
+    loss_fn = nn.BCEWithLogitsLoss() # BCEWithLogitsLoss = sigmoid built-in
+
+    # Create an optimizer
+    optimizer = torch.optim.SGD(params=cur_model.parameters(), lr=0.1)
+    
     
 workflow()
